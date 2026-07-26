@@ -1,0 +1,120 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. Company Model
+model Company {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  email       String?
+  phone       String?
+  location    String?
+  website     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  departments Department[]
+  employees   User[]
+  projects    Project[]
+}
+
+// 2. Department Model
+model Department {
+  id          String       @id @default(uuid())
+  name        String
+  companyId   String
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  employees   User[]
+}
+
+// 3. Designation Model
+model Designation {
+  id          String       @id @default(uuid())
+  title       String
+  level       String?      
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  employees   User[]
+}
+
+// 4. User Model (Admin, HR, and Employees)
+model User {
+  id            String       @id @default(uuid())
+  name          String
+  email         String       @unique
+  password      String       
+  role          String       @default("EMPLOYEE") // "ADMIN", "HR", "EMPLOYEE"
+  phone         String?
+  avatar        String?
+  
+  companyId     String?
+  company       Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  
+  departmentId  String?
+  department    Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  
+  designationId String?
+  designation   Designation? @relation(fields: [designationId], references: [id], onDelete: SetNull)
+  
+  salaries      Salary[]
+  projects      Project[]    @relation("EmployeeProjects")
+  leaves        Leave[]      // Added opposite relation for Leave model
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+// 5. Salary Model
+model Salary {
+  id          String       @id @default(uuid())
+  amount      Float
+  bonus       Float        @default(0)
+  deductions  Float        @default(0)
+  payDate     DateTime     @default(now())
+  status      String       @default("Paid") 
+  
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// 6. Project Model
+model Project {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  status      String       @default("Ongoing") 
+  deadline    DateTime?
+  
+  companyId   String
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  employees   User[]       @relation("EmployeeProjects")
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// 7. Leave Model
+model Leave {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaveType   String
+  startDate   DateTime
+  endDate     DateTime
+  reason      String
+  status      String   @default("Pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
